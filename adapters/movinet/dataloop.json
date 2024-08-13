@@ -1,0 +1,318 @@
+{
+  "name": "movinet",
+  "displayName": "MoViNet",
+  "version": "0.0.3",
+  "scope": "project",
+  "description": "",
+  "attributes": {
+    "Provider": "TensorFlow",
+    "Category": "Model",
+    "Computer Vision": "Video Classification",
+    "Media Type": [
+      "Video"
+    ],
+    "Deployed By": "Dataloop"
+  },
+  "components": {
+    "computeConfigs": [
+      {
+        "name": "movinet-deploy",
+        "runtime": {
+          "podType": "regular-s",
+          "concurrency": 1,
+          "runnerImage": "dataloopai/dtlpy-agent:gpu.cuda.11.8.py3.8.pytorch2",
+          "autoscaler": {
+            "type": "rabbitmq",
+            "minReplicas": 0,
+            "maxReplicas": 2
+          }
+        }
+      },
+      {
+        "name": "movinet-train-evaluate",
+        "runtime": {
+          "podType": "gpu-t4",
+          "concurrency": 1,
+          "runnerImage": "dataloopai/dtlpy-agent:gpu.cuda.11.8.py3.8.pytorch2",
+          "autoscaler": {
+            "type": "rabbitmq",
+            "minReplicas": 0,
+            "maxReplicas": 1,
+            "queueLength": 100
+          }
+        }
+      }
+    ],
+    "modules": [
+      {
+        "name": "movinet-module",
+        "entryPoint": "model_adapter.py",
+        "className": "ModelAdapter",
+        "computeConfig": "movinet-deploy",
+        "description": "MoViNet Module",
+        "initInputs": [
+          {
+            "type": "Model",
+            "name": "model_entity"
+          }
+        ],
+        "functions": [
+          {
+            "name": "evaluate_model",
+            "computeConfig": "movinet-train-evaluate",
+            "input": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              },
+              {
+                "type": "Dataset",
+                "name": "dataset",
+                "description": "Dataloop Dataset Entity"
+              },
+              {
+                "type": "Json",
+                "name": "filters",
+                "description": "Dataloop Filter DQL"
+              }
+            ],
+            "output": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              },
+              {
+                "type": "Dataset",
+                "name": "dataset",
+                "description": "Dataloop Dataset Entity"
+              }
+            ],
+            "displayName": "Evaluate a Model",
+            "displayIcon": "",
+            "description": "Function to evaluate MoViNet model performance"
+          },
+          {
+            "name": "predict_items",
+            "input": [
+              {
+                "type": "Item[]",
+                "name": "items",
+                "description": "List of items to run inference on"
+              }
+            ],
+            "output": [
+              {
+                "type": "Item[]",
+                "name": "items",
+                "description": "The same input images for prediction."
+              },
+              {
+                "type": "Annotation[]",
+                "name": "annotations",
+                "description": "The predicted annotations."
+              }
+            ],
+            "displayName": "Predict Items",
+            "displayIcon": "",
+            "description": "Function to run MoViNet inference on items"
+          },
+          {
+            "name": "train_model",
+            "computeConfig": "movinet-train-evaluate",
+            "input": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              }
+            ],
+            "output": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              }
+            ],
+            "displayName": "Train a Model",
+            "displayIcon": "",
+            "description": "Function to train MoViNet model"
+          },
+          {
+            "name": "predict_dataset",
+            "input": [
+              {
+                "type": "Dataset",
+                "name": "dataset",
+                "description": ""
+              },
+              {
+                "type": "Json",
+                "name": "filters",
+                "description": "Dataloop Filter DQL"
+              }
+            ],
+            "output": [
+            ],
+            "displayName": "Predict Dataset",
+            "displayIcon": "",
+            "description": "Function to run MoViNet inference on a dataset"
+          }
+        ]
+      }
+    ],
+    "models": [
+      {
+        "name": "movinet",
+        "moduleName": "movinet-module",
+        "scope": "project",
+        "status": "pre-trained",
+        "inputType": "video",
+        "outputType": "class",
+        "configuration": {
+          "hub_version": 3,
+          "model_id": "a0",
+          "model_name": "base",
+          "batch_size": 2,
+          "num_epochs": 8,
+          "n_frames": 13,
+          "top_k": 3
+        },
+        "description": "Video classification model to classify an activity in a given video.",
+        "labels": [
+          "abseiling",
+          "acting in play",
+          "adjusting glasses",
+          "air drumming",
+          "alligator wrestling",
+          "answering questions",
+          "applauding",
+          "applying cream",
+          "archaeological excavation",
+          "archery",
+          "arguing",
+          "arm wrestling",
+          "arranging flowers",
+          "assembling bicycle",
+          "assembling computer",
+          "attending conference",
+          "auctioning",
+          "backflip (human)",
+          "baking cookies",
+          "bandaging",
+          "barbequing",
+          "bartending",
+          "base jumping",
+          "bathing dog",
+          "battle rope training",
+          "beatboxing",
+          "bee keeping",
+          "belly dancing",
+          "bench pressing",
+          "bending back",
+          "bending metal",
+          "biking through snow",
+          "blasting sand",
+          "blowdrying hair",
+          "blowing bubble gum",
+          "blowing glass",
+          "blowing leaves",
+          "blowing nose",
+          "blowing out candles",
+          "bobsledding",
+          "bodysurfing",
+          "bookbinding",
+          "bottling",
+          "bouncing on bouncy castle",
+          "bouncing on trampoline",
+          "bowling",
+          "braiding hair",
+          "breading or breadcrumbing",
+          "breakdancing",
+          "breaking boards",
+          "breathing fire",
+          "brush painting",
+          "brushing hair",
+          "brushing teeth",
+          "building cabinet",
+          "building lego",
+          "building sandcastle",
+          "building shed",
+          "bull fighting",
+          "bulldozing",
+          "bungee jumping",
+          "burping",
+          "busking",
+          "calculating",
+          "calligraphy",
+          "canoeing or kayaking",
+          "capoeira",
+          "capsizing",
+          "card stacking",
+          "card throwing",
+          "carrying baby",
+          "cartwheeling",
+          "carving ice",
+          "carving pumpkin",
+          "casting fishing line",
+          "catching fish",
+          "catching or throwing baseball",
+          "catching or throwing frisbee",
+          "catching or throwing softball",
+          "celebrating",
+          "changing gear in car",
+          "changing oil",
+          "changing wheel (not on bike)",
+          "checking tires",
+          "cheerleading",
+          "chewing gum",
+          "chiseling stone",
+          "chiseling wood",
+          "chopping meat",
+          "chopping vegetables",
+          "chopping wood",
+          "clam digging",
+          "clapping",
+          "clay pottery making",
+          "clean and jerk",
+          "cleaning gutters",
+          "cleaning pool",
+          "cleaning shoes",
+          "cleaning toilet",
+          "cleaning windows",
+          "climbing a rope",
+          "climbing ladder",
+          "climbing tree",
+          "coloring in",
+          "combing hair",
+          "contact juggling",
+          "contorting",
+          "cooking egg",
+          "cooking on campfire",
+          "cooking sausages (not on barbeque)",
+          "cooking scallops",
+          "cosplaying",
+          "counting money",
+          "country line dancing",
+          "cracking back",
+          "cracking knuckles",
+          "cracking neck",
+          "crawling baby",
+          "crossing eyes",
+          "crossing river",
+          "crying",
+          "cumbia",
+          "curling (sport)",
+          "curling hair",
+          "cutting apple",
+          "cutting nails",
+          "cutting orange",
+          "cutting pineapple",
+          "cutting watermelon",
+          "dancing"
+        ]
+      }
+    ]
+  }
+}
