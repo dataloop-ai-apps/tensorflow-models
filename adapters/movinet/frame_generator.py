@@ -1,7 +1,6 @@
 import tensorflow as tf
 from glob import glob
 import numpy as np
-import dtlpy as dl
 import random
 import json
 import cv2
@@ -24,7 +23,7 @@ def format_frames(frame, output_size):
     return frame
 
 
-def frames_from_video_file(video_path, n_frames, output_size=(224, 224), frame_step=15):
+def frames_from_video_file(video_path, n_frames, input_size=(224, 224), frame_step=15):
     """
       Creates frames from each video file present for each category.
 
@@ -53,13 +52,13 @@ def frames_from_video_file(video_path, n_frames, output_size=(224, 224), frame_s
     src.set(cv2.CAP_PROP_POS_FRAMES, start)
     # ret is a boolean indicating whether read was successful, frame is the image itself
     ret, frame = src.read()
-    result.append(format_frames(frame, output_size))
+    result.append(format_frames(frame, input_size))
 
     for _ in range(n_frames - 1):
         for _ in range(frame_step):
             ret, frame = src.read()
         if ret:
-            frame = format_frames(frame, output_size)
+            frame = format_frames(frame, input_size)
             result.append(frame)
         else:
             result.append(np.zeros_like(result[0]))
@@ -70,7 +69,9 @@ def frames_from_video_file(video_path, n_frames, output_size=(224, 224), frame_s
 
 
 class FrameGenerator:
-    def __init__(self, local_path, subset, n_frames, labels, label_to_id_map, training=False):
+    def __init__(self, local_path, subset, n_frames, labels, label_to_id_map, model, model_mode, batch_size,
+                 input_size=(224, 224),
+                 training=False):
         """ Returns a set of frames with their associated label.
 
           Args:
@@ -84,11 +85,15 @@ class FrameGenerator:
         self.training = training
         self.class_names = labels
         self.class_ids_for_name = label_to_id_map
+        self.model_mode = model_mode
+        self.batch_size = batch_size
+        self.model = model
+        self.input_size = input_size
 
     def get_files_and_class_names(self):
         # Video local paths
-        video_paths = glob(os.path.join(self.path, self.subset, '../items', self.subset, '**/*.webm'))
-        video_paths += glob(os.path.join(self.path, self.subset, '../items', self.subset, '*.webm'))
+        video_paths = glob(os.path.join(self.path, self.subset, 'items', self.subset, '**/*.webm'))
+        video_paths += glob(os.path.join(self.path, self.subset, 'items', self.subset, '*.webm'))
 
         # Annotation local paths
         json_files = glob(os.path.join(self.path, self.subset, 'json', self.subset, '**/*.json'))
@@ -119,30 +124,16 @@ class FrameGenerator:
             random.shuffle(pairs)
 
         for path, name in pairs:
-            video_frames = frames_from_video_file(path, self.n_frames)
+            video_frames = frames_from_video_file(video_path=path, n_frames=self.n_frames, input_size=self.input_size)
             label = self.class_ids_for_name[name]  # Encode labels
-            yield video_frames, label
+            # yield video_frames, label
 
+            if self.model_mode == 'stream':
+                # Generate initial states for streaming mode
+                init_states_fn = self.model.layers[-1].resolved_object.signatures['init_states']
+                init_states = init_states_fn(tf.shape(video_frames[tf.newaxis]))
 
-if __name__ == '__main__':
-    dl.setenv('rc')
-    dataset = dl.datasets.get(dataset_id='66b22085e3a88dea049649f1')
-    local_path = os.path.join(os.getcwd(), 'datasets', dataset.id)
-    # dataset.download(local_path=local_path, annotation_options=dl.entities.ViewAnnotationOptions.JSON)
-
-    # labels = [label.tag for label in dataset.labels]
-    # id_to_label_map = {int(idx): lbl for idx, lbl in enumerate(labels)}
-
-    with tf.io.gfile.GFile('kinetics_600_labels.txt') as f:
-        lines = f.readlines()
-    labels = [line.strip() for line in lines]
-    id_to_label_map = {int(idx): lbl for idx, lbl in enumerate(labels)}
-    label_to_id_map = {lbl: int(idx) for idx, lbl in id_to_label_map.items()}
-
-    f = FrameGenerator(local_path=local_path, subset='train', n_frames=13, labels=labels,
-                       label_to_id_map=label_to_id_map, training=True)
-    frames, label = next(f())
-
-    print(f"Shape: {frames.shape}")
-    print(f"Label: {label}")
-    # vids, clss = f.get_files_and_class_names()
+                states = self.model.get_initial_states(batch_size=self.batch_size)
+                yield video_frames, states, label
+            else:
+                yield video_frames, label

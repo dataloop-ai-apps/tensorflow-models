@@ -338,5 +338,7 @@ inference-movinet.py
 kinetics_600_labels.txt
 detect_video_rate.py
 .dataloop
-/tmp
-
+adapters/movinet/tmp
+tmp
+adapters/movinet/test_generator.py
+adapters/movinet/tests.py

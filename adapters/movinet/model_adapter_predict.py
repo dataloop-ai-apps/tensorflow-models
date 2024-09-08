@@ -1,7 +1,3 @@
-from official.projects.movinet.tools import export_saved_model
-from official.projects.movinet.modeling import movinet_model
-from official.projects.movinet.modeling import movinet
-from frame_generator import FrameGenerator
 import tensorflow_hub as hub
 import tensorflow as tf
 import numpy as np
@@ -11,7 +7,7 @@ import logging
 import cv2
 import os
 
-logger = logging.getLogger('segmentation-models-adapter')
+logger = logging.getLogger('movinet-adapter')
 
 
 @dl.Package.decorators.module(name='model-adapter',
@@ -47,90 +43,8 @@ class ModelAdapter(dl.BaseModelAdapter):
                                                         model_mode=self.model_mode,
                                                         hub_version=hub_version)
 
-    def save(self, local_path, **kwargs):
-        """ saves configuration and weights locally
-            the function is called in save_to_model which first save locally and then uploads to model entity
-
-        :param local_path: `str` directory path in local FileSystem
-        """
-        # SAVES IN .h5 SAVING FORMAT
-        model_filename = kwargs.get('weights_filename', 'best.h5')
-        self.model.save(os.path.join(local_path, model_filename), save_format='h5')
-        self.configuration['weights_filename'] = model_filename
-
     def train(self, data_path, output_path, **kwargs):
-        batch_size = self.configuration.get("batch_size", 2)
-        num_frames = self.configuration.get("num_frames", 13)
-        num_epochs = self.configuration.get("num_epochs", 8)
-        resolution = self.configuration.get("resolution", 172)
-
-        # Load MoviNet without pretrained weights
-        backbone = movinet.Movinet(model_id=self.model_id)
-        self.model = movinet_model.MovinetClassifier(backbone=backbone, num_classes=len(self.model_entity.labels))
-        self.model.build([batch_size, num_frames, resolution, resolution, 3])
-
-        if self.model_mode == 'stream':
-            output_signature = (tf.TensorSpec(shape=(num_frames, resolution, resolution, 3), dtype=tf.float32),
-                                tf.TensorSpec(shape=(batch_size, 44, 256), dtype=tf.int16),
-                                tf.TensorSpec(shape=(), dtype=tf.int16))
-        else:
-
-            output_signature = (tf.TensorSpec(shape=(None, None, None, 3), dtype=tf.float32),
-                                tf.TensorSpec(shape=(), dtype=tf.int16))
-
-        train_ds = tf.data.Dataset.from_generator(FrameGenerator(local_path=os.path.join(os.getcwd(), data_path),
-                                                                 subset='train',
-                                                                 n_frames=num_frames,
-                                                                 labels=self.model_entity.labels,
-                                                                 label_to_id_map=self.model_entity.label_to_id_map,
-                                                                 model=self.model,
-                                                                 model_mode=self.model_mode,
-                                                                 batch_size=batch_size,
-                                                                 input_size=(resolution, resolution),
-                                                                 training=True),
-
-                                                  output_signature=output_signature)
-        train_ds = train_ds.batch(batch_size)
-
-        validation_ds = tf.data.Dataset.from_generator(FrameGenerator(local_path=os.path.join(os.getcwd(), data_path),
-                                                                      subset='validation',
-                                                                      n_frames=num_frames,
-                                                                      labels=self.model_entity.labels,
-                                                                      label_to_id_map=self.model_entity.label_to_id_map,
-                                                                      model=self.model,
-                                                                      model_mode=self.model_mode,
-                                                                      batch_size=batch_size,
-                                                                      input_size=(resolution, resolution),
-                                                                      training=True),
-
-                                                       output_signature=output_signature)
-        validation_ds = validation_ds.batch(batch_size)
-
-        loss_obj = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-
-        optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
-
-        self.model.compile(loss=loss_obj, optimizer=optimizer, metrics=['accuracy'], run_eagerly=True)
-        tf.config.run_functions_eagerly(True)
-
-        checkpoint_path = os.path.join(data_path, "output", "best_weights.h5")
-        # checkpoint_dir = os.path.dirname(checkpoint_path)
-        checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-            filepath=checkpoint_path,
-            save_weights_only=False,
-            save_best_only=True,  # Save the best model based on the metric (e.g., validation accuracy)
-            monitor='val_accuracy',  # Monitor validation accuracy to save the best model
-            mode='max',
-            verbose=1,
-        )
-
-        with tf.device(self.device):
-            self.model.fit(train_ds,
-                           validation_data=validation_ds,
-                           epochs=num_epochs,
-                           validation_freq=1,
-                           verbose=1,
-                           callbacks=[checkpoint_callback])
+        logger.warning("Training not implemented yet")
 
     def predict(self, batch, **kwargs):
         """ Model inference (predictions) on batch of images
