@@ -1,7 +1,7 @@
 {
   "name": "tensorflow-movinet",
   "displayName": "MoViNet",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "scope": "public",
   "description": "",
   "attributes": {
