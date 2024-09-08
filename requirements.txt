@@ -1,3 +1,2 @@
 tf-models-official
 mediapy
-opencv-python

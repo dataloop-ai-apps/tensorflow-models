@@ -12,4 +12,4 @@ RUN pip install -r requirements.txt
 RUN pip install --upgrade tensorflow-datasets==4.8.3
 
 # docker build -t gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:0.0.1 -f ./Dockerfile  .
-# docker push gcr.io/viewo-g/piper/agent/runner/apps/torch-models:0.0.1
+# docker push gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:0.0.1
