@@ -1,2 +1,2 @@
-tf-models-official
+tf-models-official==2.10.1
 mediapy
