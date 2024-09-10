@@ -1,5 +1,5 @@
 tensorflow==2.10.1
 keras==2.10.0
 tensorflow-hub==0.16.1
-tf-models-official==2.10.0
+tf-models-official==2.10.1
 mediapy
