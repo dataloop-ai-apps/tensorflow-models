@@ -92,12 +92,14 @@ class FrameGenerator:
 
     def get_files_and_class_names(self):
         # Video local paths
-        video_paths = glob(os.path.join(self.path, self.subset, 'items', self.subset, '**/*.webm'))
-        video_paths += glob(os.path.join(self.path, self.subset, 'items', self.subset, '*.webm'))
+        # TODO: HARDCODED VIDEO SUFFIX ?
+        # TODO: MP4, .WEBM , ? OPTIONS
+        video_paths = glob(os.path.join(self.path, self.subset, 'items', '**', '**/*.webm'), recursive=True)
+        video_paths += glob(os.path.join(self.path, self.subset, 'items', '**', '*.webm'), recursive=True)
 
         # Annotation local paths
-        json_files = glob(os.path.join(self.path, self.subset, 'json', self.subset, '**/*.json'))
-        json_files += glob(os.path.join(self.path, self.subset, 'json', self.subset, '*.json'))
+        json_files = glob(os.path.join(self.path, self.subset, 'json', '**', '**/*.json'), recursive=True)
+        json_files += glob(os.path.join(self.path, self.subset, 'json', '**', '*.json'), recursive=True)
 
         classes = list()
         # Find matching file names
@@ -111,8 +113,8 @@ class FrameGenerator:
 
             f = open(json_path)
             json_file = json.load(f)
-            annotations = json_file.get('annotations')  # TODO: ALLOW MORE THAN 1 CLASS
-            classes.append(annotations[0].get('label'))
+            annotations = json_file.get('annotations')
+            classes.append(annotations[0].get('label'))  # TODO MORE THAN 1 LABEL?
 
         return video_paths, classes
 
@@ -128,7 +130,7 @@ class FrameGenerator:
             label = self.class_ids_for_name[name]  # Encode labels
             # yield video_frames, label
 
-            if self.model_mode == 'stream':
+            if self.model_mode == 'stream':  # TODO: REMOVE
                 # Generate initial states for streaming mode
                 init_states_fn = self.model.layers[-1].resolved_object.signatures['init_states']
                 init_states = init_states_fn(tf.shape(video_frames[tf.newaxis]))

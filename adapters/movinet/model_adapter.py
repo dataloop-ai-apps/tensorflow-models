@@ -1,4 +1,3 @@
-from official.projects.movinet.tools import export_saved_model
 from official.projects.movinet.modeling import movinet_model
 from official.projects.movinet.modeling import movinet
 from frame_generator import FrameGenerator
@@ -20,11 +19,7 @@ logger = logging.getLogger('segmentation-models-adapter')
 class ModelAdapter(dl.BaseModelAdapter):
 
     def load(self, local_path, **kwargs):
-        """ Loads model and populates self.model with a `runnable` model
-            This function is called by load_from_model (download to local and then loads)
 
-        :param local_path: `str` directory path in local FileSystem
-        """
         weights_filename = self.configuration.get('weights_filename', None)
         self.model_id = self.configuration.get('model_id', 'a0')  # [a0-a5]
         self.model_mode = self.configuration.get('model_mode', 'base')  # ['base','stream']
@@ -35,7 +30,11 @@ class ModelAdapter(dl.BaseModelAdapter):
             model_path = os.path.join(local_path, weights_filename)
             if os.path.isfile(model_path):
                 with tf.device(self.device):
-                    self.model = tf.keras.models.load_model(model_path, custom_objects={'KerasLayer': hub.KerasLayer})
+                    backbone = movinet.Movinet(model_id=self.model_id)
+                    self.model = movinet_model.MovinetClassifier(backbone=backbone,
+                                                                 num_classes=len(self.model_entity.labels))
+
+                    self.model.load_weights(model_path)
                 logger.info(f"Loaded models weights : {model_path}")
             else:
                 raise dl.exceptions.NotFound(
@@ -48,35 +47,37 @@ class ModelAdapter(dl.BaseModelAdapter):
                                                         hub_version=hub_version)
 
     def save(self, local_path, **kwargs):
-        """ saves configuration and weights locally
-            the function is called in save_to_model which first save locally and then uploads to model entity
-
-        :param local_path: `str` directory path in local FileSystem
-        """
         # SAVES IN .h5 SAVING FORMAT
         model_filename = kwargs.get('weights_filename', 'best.h5')
-        self.model.save(os.path.join(local_path, model_filename), save_format='h5')
+        self.model.save_weights(os.path.join(local_path, model_filename))
         self.configuration['weights_filename'] = model_filename
 
     def train(self, data_path, output_path, **kwargs):
+        # TODO - train stream mode?
+        if self.model_mode == 'stream':
+            raise Exception("Streaming training is not supported yet.")
+
         batch_size = self.configuration.get("batch_size", 2)
         num_frames = self.configuration.get("num_frames", 13)
         num_epochs = self.configuration.get("num_epochs", 8)
         resolution = self.configuration.get("resolution", 172)
 
         # Load MoviNet without pretrained weights
+        tf.keras.backend.clear_session()
+
         backbone = movinet.Movinet(model_id=self.model_id)
+        backbone.trainable = True
         self.model = movinet_model.MovinetClassifier(backbone=backbone, num_classes=len(self.model_entity.labels))
         self.model.build([batch_size, num_frames, resolution, resolution, 3])
 
-        if self.model_mode == 'stream':
-            output_signature = (tf.TensorSpec(shape=(num_frames, resolution, resolution, 3), dtype=tf.float32),
-                                tf.TensorSpec(shape=(batch_size, 44, 256), dtype=tf.int16),
-                                tf.TensorSpec(shape=(), dtype=tf.int16))
-        else:
+        # if self.model_mode == 'stream':
+        #     output_signature = (tf.TensorSpec(shape=(num_frames, resolution, resolution, 3), dtype=tf.float32),
+        #                         tf.TensorSpec(shape=(batch_size, 44, 256), dtype=tf.int16),
+        #                         tf.TensorSpec(shape=(), dtype=tf.int16))
+        # else:
 
-            output_signature = (tf.TensorSpec(shape=(None, None, None, 3), dtype=tf.float32),
-                                tf.TensorSpec(shape=(), dtype=tf.int16))
+        output_signature = (tf.TensorSpec(shape=(None, None, None, 3), dtype=tf.float32),
+                            tf.TensorSpec(shape=(), dtype=tf.int16))
 
         train_ds = tf.data.Dataset.from_generator(FrameGenerator(local_path=os.path.join(os.getcwd(), data_path),
                                                                  subset='train',
@@ -101,20 +102,19 @@ class ModelAdapter(dl.BaseModelAdapter):
                                                                       model_mode=self.model_mode,
                                                                       batch_size=batch_size,
                                                                       input_size=(resolution, resolution),
-                                                                      training=True),
+                                                                      training=False),
 
                                                        output_signature=output_signature)
         validation_ds = validation_ds.batch(batch_size)
 
         loss_obj = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-        optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+        optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)  # TODO: CONFIGURATION
 
-        self.model.compile(loss=loss_obj, optimizer=optimizer, metrics=['accuracy'], run_eagerly=True)
-        tf.config.run_functions_eagerly(True)
+        self.model.compile(loss=loss_obj, optimizer=optimizer, metrics=['accuracy'])
+        # tf.config.run_functions_eagerly(True)
 
-        checkpoint_path = os.path.join(data_path, "output", "best_weights.h5")
-        # checkpoint_dir = os.path.dirname(checkpoint_path)
+        checkpoint_path = os.path.join(data_path, "output", "best_weights.h5")  # TODO:give options to the user
         checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path,
             save_weights_only=False,

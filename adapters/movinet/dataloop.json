@@ -32,7 +32,7 @@
     "modules": [
       {
         "name": "movinet-module",
-        "entryPoint": "adapters/movinet/model_adapter_predict.py",
+        "entryPoint": "adapters/movinet/model_adapter.py",
         "className": "ModelAdapter",
         "computeConfig": "movinet-deploy",
         "description": "MoViNet Module",
