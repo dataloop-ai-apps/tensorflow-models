@@ -53,7 +53,6 @@ class ModelAdapter(dl.BaseModelAdapter):
         self.configuration['weights_filename'] = model_filename
 
     def train(self, data_path, output_path, **kwargs):
-        # TODO - train stream mode?
         if self.model_mode == 'stream':
             raise Exception("Streaming training is not supported yet.")
 
@@ -61,6 +60,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         num_frames = self.configuration.get("num_frames", 13)
         num_epochs = self.configuration.get("num_epochs", 8)
         resolution = self.configuration.get("resolution", 172)
+        learning_rate = self.configuration.get("learning_rate", 0.001)
 
         # Load MoviNet without pretrained weights
         tf.keras.backend.clear_session()
@@ -69,12 +69,6 @@ class ModelAdapter(dl.BaseModelAdapter):
         backbone.trainable = True
         self.model = movinet_model.MovinetClassifier(backbone=backbone, num_classes=len(self.model_entity.labels))
         self.model.build([batch_size, num_frames, resolution, resolution, 3])
-
-        # if self.model_mode == 'stream':
-        #     output_signature = (tf.TensorSpec(shape=(num_frames, resolution, resolution, 3), dtype=tf.float32),
-        #                         tf.TensorSpec(shape=(batch_size, 44, 256), dtype=tf.int16),
-        #                         tf.TensorSpec(shape=(), dtype=tf.int16))
-        # else:
 
         output_signature = (tf.TensorSpec(shape=(None, None, None, 3), dtype=tf.float32),
                             tf.TensorSpec(shape=(), dtype=tf.int16))
@@ -109,12 +103,12 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         loss_obj = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-        optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)  # TODO: CONFIGURATION
+        optimizer = tf.keras.optimizers.Adam(learning_rate=learning_rate)
 
         self.model.compile(loss=loss_obj, optimizer=optimizer, metrics=['accuracy'])
         # tf.config.run_functions_eagerly(True)
 
-        checkpoint_path = os.path.join(data_path, "output", "best_weights.h5")  # TODO:give options to the user
+        checkpoint_path = os.path.join(data_path, "output", "best_weights.h5")
         checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=checkpoint_path,
             save_weights_only=False,
@@ -133,13 +127,6 @@ class ModelAdapter(dl.BaseModelAdapter):
                            callbacks=[checkpoint_callback])
 
     def predict(self, batch, **kwargs):
-        """ Model inference (predictions) on batch of images
-
-            Virtual method - need to implement
-
-        :param batch: `np.ndarray`
-        :return: `list[dl.AnnotationCollection]` each collection is per each image / item in the batch
-        """
         top_k = self.configuration.get("top_k", 3)
         labels = self.model_entity.labels
 
@@ -186,8 +173,8 @@ class ModelAdapter(dl.BaseModelAdapter):
 
                 with tf.device(self.device):
                     logits, states = self.model.predict({**init_states, 'image': video_with_batch}, verbose=0)
-                    logits = logits[0]
-                    probs = tf.nn.softmax(logits, axis=-1)
+                    logits = logits[0]  # concatenating all the logits
+                    probs = tf.nn.softmax(logits, axis=-1)  # estimating probabilities
 
             # Base Mode - video as input, and returns the probabilities averaged over the frames.
             elif self.model_mode == 'base':
