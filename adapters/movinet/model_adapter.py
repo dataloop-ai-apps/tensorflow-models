@@ -136,16 +136,10 @@ class ModelAdapter(dl.BaseModelAdapter):
             ################
             # Prepare item #
             ################
-
-            _, suffix = os.path.splitext(video.name)
-            buffer = video.download(save_locally=False)
-
-            # Save the buffer to a temporary file for reading with opencv
-            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_video:
-                temp_video.write(buffer.read())
-                temp_video_path = temp_video.name
+            os.makedirs(os.path.join(os.getcwd(), 'temp_videos'), exist_ok=True)
+            file_path = video.download(local_path=os.path.join(os.getcwd(), 'temp_videos'))
             frames = []
-            cap = cv2.VideoCapture(temp_video_path)
+            cap = cv2.VideoCapture(file_path)
             ret = True
             while ret:
                 ret, img = cap.read()  # read one frame from the 'capture' object; img is (H, W, C)
@@ -157,14 +151,15 @@ class ModelAdapter(dl.BaseModelAdapter):
             # Normalize the video frames - byte data is not directly normalized,
             # for ensure that the video frames are correctly scaled for the model.
             video_frames = video_frames / 255.0
-
+            logger.info("Finish extracting frames from video")
             # Delete the temporary video file
-            os.remove(temp_video_path)
-
+            os.remove(file_path)
+            logger.info(f"Removed {file_path}")
             ######################
             ######################
 
             if self.model_mode == 'stream':
+                logger.info("Predicting - Mode Stream")
                 video_with_batch = np.expand_dims(video_frames,
                                                   axis=0)  # add batch size 1 : (batch, frames, height, width, colors)
 
@@ -172,13 +167,16 @@ class ModelAdapter(dl.BaseModelAdapter):
                 init_states = init_states_fn(tf.shape(video_frames[tf.newaxis]))
 
                 with tf.device(self.device):
+                    logger.info(f"Device: {self.device}")
                     logits, states = self.model.predict({**init_states, 'image': video_with_batch}, verbose=0)
                     logits = logits[0]  # concatenating all the logits
                     probs = tf.nn.softmax(logits, axis=-1)  # estimating probabilities
 
             # Base Mode - video as input, and returns the probabilities averaged over the frames.
             elif self.model_mode == 'base':
+                logger.info("Predicting - Mode Base")
                 with tf.device(self.device):
+                    logger.info(f"Device: {self.device}")
                     outputs = self.model.predict(video_frames[tf.newaxis])[0]
                     probs = tf.nn.softmax(outputs)
 
