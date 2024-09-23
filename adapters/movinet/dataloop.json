@@ -20,7 +20,20 @@
         "runtime": {
           "podType": "regular-s",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:main",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.0",
+          "autoscaler": {
+            "type": "rabbitmq",
+            "minReplicas": 0,
+            "maxReplicas": 2
+          }
+        }
+      },
+      {
+        "name": "movinet-train-evaluate",
+        "runtime": {
+          "podType": "gpu-t4",
+          "concurrency": 1,
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.0",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
@@ -123,6 +136,27 @@
             "displayName": "Predict Dataset",
             "displayIcon": "",
             "description": "Function to run MoViNet inference on a dataset"
+          },
+          {
+            "name": "train_model",
+            "computeConfig": "movinet-train-evaluate",
+            "input": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              }
+            ],
+            "output": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              }
+            ],
+            "displayName": "Train a Model",
+            "displayIcon": "",
+            "description": "Function to train Resnet model"
           }
         ]
       }

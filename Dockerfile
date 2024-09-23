@@ -10,11 +10,16 @@ RUN apt-get update && apt-get install -y \
 
 USER 1000
 ENV HOME=/tmp
-RUN python3 -m pip install --upgrade pip setuptools wheel Cython
-COPY /requirements.txt .
 
-RUN pip install -r requirements.txt
-RUN pip install --upgrade tensorflow-datasets==4.8.3
+RUN pip3 install "cython<3.0.0" wheel
+RUN pip3 install "pyyaml==5.4.1" --no-build-isolation
+RUN pip3 install --user keras==2.10.0 \
+                        tensorflow-hub==0.16.1 \
+                        opencv-python-headless \
+                        tf-models-official==2.10.1 \
+                        mediapy
 
-# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:0.0.1 -f ./Dockerfile  .
-# docker push gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:0.0.1
+RUN pip3 install --user --upgrade tensorflow-datasets==4.8.3
+
+# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.0 -f ./Dockerfile  .
+# docker push gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.0
