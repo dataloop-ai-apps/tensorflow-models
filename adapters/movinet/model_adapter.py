@@ -1,6 +1,6 @@
 from official.projects.movinet.modeling import movinet_model
 from official.projects.movinet.modeling import movinet
-from frame_generator import FrameGenerator
+from adapters.movinet.frame_generator import FrameGenerator
 import tensorflow_hub as hub
 import tensorflow as tf
 import numpy as np
