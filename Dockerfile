@@ -17,6 +17,7 @@ RUN pip3 install --user keras==2.10.0 \
                         tensorflow-hub==0.16.1 \
                         opencv-python-headless \
                         tf-models-official==2.10.1 \
+                        tensorflow[cuda]==2.10.1 \
                         mediapy
 
 RUN pip3 install --user --upgrade tensorflow-datasets==4.8.3
