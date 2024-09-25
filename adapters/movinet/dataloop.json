@@ -20,7 +20,20 @@
         "runtime": {
           "podType": "regular-s",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:main",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.0",
+          "autoscaler": {
+            "type": "rabbitmq",
+            "minReplicas": 0,
+            "maxReplicas": 2
+          }
+        }
+      },
+      {
+        "name": "movinet-train-evaluate",
+        "runtime": {
+          "podType": "gpu-t4-m",
+          "concurrency": 1,
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.0",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
@@ -32,7 +45,7 @@
     "modules": [
       {
         "name": "movinet-module",
-        "entryPoint": "adapters/movinet/model_adapter_predict.py",
+        "entryPoint": "adapters/movinet/model_adapter.py",
         "className": "ModelAdapter",
         "computeConfig": "movinet-deploy",
         "description": "MoViNet Module",
@@ -81,6 +94,7 @@
           },
           {
             "name": "predict_items",
+            "computeConfig": "movinet-train-evaluate",
             "input": [
               {
                 "type": "Item[]",
@@ -106,6 +120,7 @@
           },
           {
             "name": "predict_dataset",
+            "computeConfig": "movinet-train-evaluate",
             "input": [
               {
                 "type": "Dataset",
@@ -123,6 +138,27 @@
             "displayName": "Predict Dataset",
             "displayIcon": "",
             "description": "Function to run MoViNet inference on a dataset"
+          },
+          {
+            "name": "train_model",
+            "computeConfig": "movinet-train-evaluate",
+            "input": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              }
+            ],
+            "output": [
+              {
+                "type": "Model",
+                "name": "model",
+                "description": "Dataloop Model Entity"
+              }
+            ],
+            "displayName": "Train a Model",
+            "displayIcon": "",
+            "description": "Function to train Resnet model"
           }
         ]
       }
@@ -142,7 +178,8 @@
           "batch_size": 2,
           "num_epochs": 8,
           "n_frames": 13,
-          "top_k": 3
+          "top_k": 3,
+          "learning_rate": 0.001
         },
         "description": "Video classification model to classify an activity in a given video.",
         "labels": [

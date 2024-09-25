@@ -92,12 +92,16 @@ class FrameGenerator:
 
     def get_files_and_class_names(self):
         # Video local paths
-        video_paths = glob(os.path.join(self.path, self.subset, 'items', self.subset, '**/*.webm'))
-        video_paths += glob(os.path.join(self.path, self.subset, 'items', self.subset, '*.webm'))
-
-        # Annotation local paths
-        json_files = glob(os.path.join(self.path, self.subset, 'json', self.subset, '**/*.json'))
-        json_files += glob(os.path.join(self.path, self.subset, 'json', self.subset, '*.json'))
+        # Supported video extensions
+        video_extensions = ['**/*.webm', '**/*.mp4', '**/*.avi', '**/*.mkv', '**/*.mov']
+        videos_set = set()
+        # Gather all video paths using the specified extensions
+        for ext in video_extensions:
+            videos_set.update(glob(os.path.join(self.path, self.subset, 'items', '**', ext), recursive=True))
+        # Include videos directly under 'items/**' (without subdirectories)
+        for ext in video_extensions:
+            videos_set.update(glob(os.path.join(self.path, self.subset, 'items', ext.split('/')[-1]), recursive=True))
+        video_paths = list(videos_set)
 
         classes = list()
         # Find matching file names
@@ -111,8 +115,8 @@ class FrameGenerator:
 
             f = open(json_path)
             json_file = json.load(f)
-            annotations = json_file.get('annotations')  # TODO: ALLOW MORE THAN 1 CLASS
-            classes.append(annotations[0].get('label'))
+            annotations = json_file.get('annotations')
+            classes.append(annotations[0].get('label'))  # Supports Binary classification
 
         return video_paths, classes
 
@@ -126,14 +130,4 @@ class FrameGenerator:
         for path, name in pairs:
             video_frames = frames_from_video_file(video_path=path, n_frames=self.n_frames, input_size=self.input_size)
             label = self.class_ids_for_name[name]  # Encode labels
-            # yield video_frames, label
-
-            if self.model_mode == 'stream':
-                # Generate initial states for streaming mode
-                init_states_fn = self.model.layers[-1].resolved_object.signatures['init_states']
-                init_states = init_states_fn(tf.shape(video_frames[tf.newaxis]))
-
-                states = self.model.get_initial_states(batch_size=self.batch_size)
-                yield video_frames, states, label
-            else:
-                yield video_frames, label
+            yield video_frames, label
