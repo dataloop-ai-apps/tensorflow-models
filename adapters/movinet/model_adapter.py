@@ -25,6 +25,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         self.model_mode = self.configuration.get('model_mode', 'base')  # ['base','stream']
         hub_version = self.configuration.get('hub_version', 3)
         self.device = '/GPU:0' if tf.config.list_physical_devices('GPU') else '/CPU:0'
+        logger.info(f"Device: {self.device}")
 
         if weights_filename:
             model_path = os.path.join(local_path, weights_filename)

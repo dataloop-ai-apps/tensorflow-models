@@ -20,7 +20,7 @@
         "runtime": {
           "podType": "regular-s",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.0",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:0.0.9",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
@@ -33,7 +33,7 @@
         "runtime": {
           "podType": "gpu-t4-m",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.0",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:0.0.9",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
