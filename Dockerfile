@@ -33,5 +33,5 @@ RUN pip3 install --user keras==2.10.0 \
 
 RUN pip3 install --user --upgrade tensorflow-datasets==4.8.3
 
-# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:0.0.10 -f ./Dockerfile  .
-# docker push gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:0.0.10
+# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1 -f ./Dockerfile  .
+# docker push gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1

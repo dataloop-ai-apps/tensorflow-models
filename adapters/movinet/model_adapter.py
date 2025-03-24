@@ -5,12 +5,11 @@ import tensorflow_hub as hub
 import tensorflow as tf
 import numpy as np
 import dtlpy as dl
-import tempfile
 import logging
 import cv2
 import os
 
-logger = logging.getLogger('segmentation-models-adapter')
+logger = logging.getLogger('movinet-model-adapter')
 
 
 @dl.Package.decorators.module(name='model-adapter',
@@ -19,20 +18,20 @@ logger = logging.getLogger('segmentation-models-adapter')
 class ModelAdapter(dl.BaseModelAdapter):
 
     def load(self, local_path, **kwargs):
-
         weights_filename = self.configuration.get('weights_filename', None)
         self.model_id = self.configuration.get('model_id', 'a0')  # [a0-a5]
         self.model_mode = self.configuration.get('model_mode', 'base')  # ['base','stream']
         hub_version = self.configuration.get('hub_version', 3)
         self.device = '/GPU:0' if tf.config.list_physical_devices('GPU') else '/CPU:0'
+        logger.info(f"Device: {self.device}")
 
-        if weights_filename:
+        if weights_filename is not None:
             model_path = os.path.join(local_path, weights_filename)
             if os.path.isfile(model_path):
                 with tf.device(self.device):
                     backbone = movinet.Movinet(model_id=self.model_id)
                     self.model = movinet_model.MovinetClassifier(backbone=backbone,
-                                                                 num_classes=len(self.model_entity.labels))
+                                                                 num_classes=len(self.model_entity.id_to_label_map))
 
                     self.model.load_weights(model_path)
                 logger.info(f"Loaded models weights : {model_path}")
@@ -40,7 +39,7 @@ class ModelAdapter(dl.BaseModelAdapter):
                 raise dl.exceptions.NotFound(
                     f"weights_filename {weights_filename} not found! Make sure to upload the model's weight file as an artifact to the model!")
         else:
-            logger.warning("Loading pre-trained weights from hub")
+            logger.info("Loading pre-trained weights from hub")
             with tf.device(self.device):
                 self.model = self.load_movinet_from_hub(model_id=self.model_id,
                                                         model_mode=self.model_mode,
@@ -67,7 +66,7 @@ class ModelAdapter(dl.BaseModelAdapter):
 
         backbone = movinet.Movinet(model_id=self.model_id)
         backbone.trainable = True
-        self.model = movinet_model.MovinetClassifier(backbone=backbone, num_classes=len(self.model_entity.labels))
+        self.model = movinet_model.MovinetClassifier(backbone=backbone, num_classes=len(self.model_entity.id_to_label_map))
         self.model.build([batch_size, num_frames, resolution, resolution, 3])
 
         output_signature = (tf.TensorSpec(shape=(None, None, None, 3), dtype=tf.float32),
@@ -129,6 +128,7 @@ class ModelAdapter(dl.BaseModelAdapter):
     def predict(self, batch, **kwargs):
         top_k = self.configuration.get("top_k", 3)
         labels = self.model_entity.labels
+        imgz = self.configuration.get("imgz", 224)
 
         batch_annotations = list()
         for video in batch:
@@ -177,7 +177,9 @@ class ModelAdapter(dl.BaseModelAdapter):
                 logger.info("Predicting - Mode Base")
                 with tf.device(self.device):
                     logger.info(f"Device: {self.device}")
-                    outputs = self.model.predict(video_frames[tf.newaxis])[0]
+                    resized_frames = np.stack([cv2.resize(f, (imgz, imgz)) for f in video_frames]) # resize to (224, 224) - safer and faster
+                    video_tensor = tf.convert_to_tensor(resized_frames.astype('float32'))
+                    outputs = self.model.predict(video_tensor[tf.newaxis])[0]
                     probs = tf.nn.softmax(outputs)
 
             else:
@@ -264,3 +266,4 @@ class ModelAdapter(dl.BaseModelAdapter):
         top_labels = [label.decode('utf8') for label in top_labels.numpy()]
         top_probs = tf.gather(probs, top_predictions, axis=-1).numpy()
         return tuple(zip(top_labels, top_probs))
+   
