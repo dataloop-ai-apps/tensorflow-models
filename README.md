@@ -1,16 +1,34 @@
 # TensorFlow Dataloop Model Adapters
 
-These are pytorch model adapters.
+This repository contains TensorFlow model adapters for integration with the Dataloop platform.
 
-1. MoviNet [documentation](adapters/movinet/README.md).
+## Available Models
+
+1. MoViNet - Mobile video classification network [documentation](adapters/movinet/README.md).
 
 Full Model Management documentation [here](https://dataloop.ai/docs).
 Developers Documentation is [here](https://developers.dataloop.ai/tutorials/model_management/).
 
-## Clone Model to a Project
+## Installation
 
-You can clone the pretrained model to your project to work as-is.
-First get all the public model:
+You can add these models to your Dataloop project in two ways:
+
+### Option 1: Dataloop Marketplace (UI)
+
+The easiest way to use these models is to install them directly from the [Dataloop Marketplace](https://dataloop.ai/platform/marketplace/):
+
+1. Navigate to the [Dataloop platform](https://dataloop.ai/)
+2. Go to the "Marketplace" section
+3. Search for "MoViNet"
+4. Click "Install" to add the model to your project
+
+This will make the model immediately available in your Library for use in annotations, model management, and pipelines.
+
+### Option 2: Clone Via SDK
+
+You can clone the pretrained model to your project using Python code.
+
+First get all the public models:
 
 ```python
 import dtlpy as dl
@@ -49,11 +67,14 @@ custom_model = project.models.clone(from_model=public_model,
                                     validation_filter=validation_filter)
 ```
 
-Now you have a new model connected to your capybara dataset, and you can initiate a training execution.
+Now you have a new model connected to your dataset, and you can initiate a training execution.
 More information [here](https://developers.dataloop.ai/tutorials/model_management/ai_library/chapter/#train)
+
+## License
+
+The models in this repository are distributed under the [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0). When using these model adapters, you must comply with the terms of this license.
 
 ## Contributions
 
 Help us get better! We welcome any contribution and suggestion to this repo.   
 Open an issue for bug/features requests.
- 
