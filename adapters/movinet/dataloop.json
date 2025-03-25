@@ -1,7 +1,7 @@
 {
   "name": "tensorflow-movinet",
   "displayName": "MoViNet",
-  "version": "0.0.11",
+  "version": "0.0.12",
   "scope": "public",
   "description": "MoViNet (Mobile Video Networks) is a TensorFlow-based video classification model optimized for efficient video processing. This adapter enables both base mode (for batch processing of full videos) and stream mode (for real-time frame-by-frame analysis). It's ideal for action recognition in surveillance, sports analysis, and other video-based applications.",
   "attributes": {
@@ -17,7 +17,7 @@
   "codebase": {
     "type": "git",
     "gitUrl": "https://github.com/dataloop-ai-apps/tensorflow-models.git",
-    "gitTag": "0.0.11"
+    "gitTag": "0.0.12"
   },
   "components": {
     "computeConfigs": [
