@@ -37,7 +37,7 @@
       {
         "name": "movinet-train-evaluate",
         "runtime": {
-          "podType": "gpu-t4-m",
+          "podType": "gpu-t4",
           "concurrency": 1,
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1",
           "autoscaler": {
@@ -100,7 +100,6 @@
           },
           {
             "name": "predict_items",
-            "computeConfig": "movinet-train-evaluate",
             "input": [
               {
                 "type": "Item[]",
@@ -126,7 +125,6 @@
           },
           {
             "name": "predict_dataset",
-            "computeConfig": "movinet-train-evaluate",
             "input": [
               {
                 "type": "Dataset",

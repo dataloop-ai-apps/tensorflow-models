@@ -28,7 +28,9 @@ is received. It is ideal for scenarios where video data is streamed continuously
 - **Pros**: Suitable for real-time applications.
 - **Cons**: More challenging to optimize due to the need for efficient frame-by-frame processing.
 
-**Important Note:** Currently, only training in base mode is supported. Stream mode can be used for inference but not for training. If you need to fine-tune a model, make sure to use base mode.
+**Important Notes:**
+1. Currently, only training in base mode is supported. Stream mode can be used for inference but not for training. If you need to fine-tune a model, make sure to use base mode.
+2. Make sure to adjust podtype to your needs (larger models versions may require larger podtypes).
 
 ## Installation
 
