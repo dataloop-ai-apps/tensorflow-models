@@ -24,7 +24,7 @@
       {
         "name": "movinet-deploy",
         "runtime": {
-          "podType": "highmem-s",
+          "podType": "highmem-l",
           "concurrency": 1,
           "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1",
           "autoscaler": {
