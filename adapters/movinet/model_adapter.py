@@ -154,20 +154,25 @@ class ModelAdapter(dl.BaseModelAdapter):
             ################
             os.makedirs(os.path.join(os.getcwd(), "temp_videos"), exist_ok=True)
             file_path = video.download(local_path=os.path.join(os.getcwd(), "temp_videos"))
-            frames = []
+            
+            # Get video dimensions and target size
             cap = cv2.VideoCapture(file_path)
+            target_size = self.configuration.get("imgz", 224)
+            frames = []
+            
             ret = True
             while ret:
-                ret, img = cap.read()  # read one frame from the 'capture' object; img is (H, W, C)
+                ret, img = cap.read()
                 if ret:
-                    frames.append(img)
+                    # Resize frame immediately to save memory
+                    resized_frame = cv2.resize(img, (target_size, target_size))
+                    # Convert to float32 immediately
+                    normalized_frame = resized_frame.astype(np.float32) / 255.0
+                    frames.append(normalized_frame)
 
             cap.release()
-            video_frames = np.stack(frames, axis=0)  # dimensions (T, H, W, C)
-            # Normalize the video frames - byte data is not directly normalized,
-            # for ensure that the video frames are correctly scaled for the model.
-            video_frames = video_frames / 255.0
-            logger.info("Finish extracting frames from video")
+            video_frames = np.stack(frames, axis=0)  # dimensions (T, target_size, target_size, 3)
+            logger.info(f"Processed video shape: {video_frames.shape}")
             # Delete the temporary video file
             os.remove(file_path)
             logger.info(f"Removed {file_path}")
@@ -293,3 +298,10 @@ class ModelAdapter(dl.BaseModelAdapter):
         top_labels = [label.decode("utf8") for label in top_labels.numpy()]
         top_probs = tf.gather(probs, top_predictions, axis=-1).numpy()
         return tuple(zip(top_labels, top_probs))
+
+
+if __name__ == "__main__":
+    model_entity = dl.models.get(model_id="")
+    item = dl.items.get(item_id="")
+    model = ModelAdapter(model_entity=model_entity)
+    model.predict_items(items=[item])
