@@ -18,6 +18,10 @@ def format_frames(frame, output_size):
       Return:
         Formatted frame with padding of specified output size.
     """
+    # Ensure frame is not None and has the expected shape
+    if frame is None or frame.size == 0:
+        frame = np.zeros((output_size[0], output_size[1], 3), dtype=np.uint8)
+    
     frame = tf.image.convert_image_dtype(frame, tf.float32)
     frame = tf.image.resize_with_pad(frame, *output_size)
     return frame
@@ -38,8 +42,18 @@ def frames_from_video_file(video_path, n_frames, input_size=(224, 224), frame_st
     # Read each video frame by frame
     result = []
     src = cv2.VideoCapture(str(video_path))
+    
+    # Check if video file was opened successfully
+    if not src.isOpened():
+        # If video can't be opened, return zero frames
+        return np.zeros((n_frames, input_size[0], input_size[1], 3), dtype=np.float32)
 
     video_length = src.get(cv2.CAP_PROP_FRAME_COUNT)
+    
+    # Check if video has valid length
+    if video_length <= 0:
+        src.release()
+        return np.zeros((n_frames, input_size[0], input_size[1], 3), dtype=np.float32)
 
     need_length = 1 + (n_frames - 1) * frame_step
 
@@ -52,16 +66,23 @@ def frames_from_video_file(video_path, n_frames, input_size=(224, 224), frame_st
     src.set(cv2.CAP_PROP_POS_FRAMES, start)
     # ret is a boolean indicating whether read was successful, frame is the image itself
     ret, frame = src.read()
+    if not ret or frame is None:
+        # If we can't read the first frame, create a zero frame
+        frame = np.zeros((input_size[0], input_size[1], 3), dtype=np.uint8)
     result.append(format_frames(frame, input_size))
 
     for _ in range(n_frames - 1):
         for _ in range(frame_step):
             ret, frame = src.read()
-        if ret:
+            if not ret:
+                break
+        if ret and frame is not None:
             frame = format_frames(frame, input_size)
             result.append(frame)
         else:
-            result.append(np.zeros_like(result[0]))
+            # Create a zero frame with the same shape as the first formatted frame
+            zero_frame = np.zeros((input_size[0], input_size[1], 3), dtype=np.uint8)
+            result.append(format_frames(zero_frame, input_size))
     src.release()
     result = np.array(result)[..., [2, 1, 0]]
 
