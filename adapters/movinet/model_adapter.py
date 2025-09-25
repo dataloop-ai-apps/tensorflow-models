@@ -55,6 +55,64 @@ class ModelAdapter(dl.BaseModelAdapter):
         self.model.save_weights(os.path.join(local_path, model_filename))
         self.configuration["weights_filename"] = model_filename
 
+    def log_metrics_to_dataloop(self, epoch, logs):
+        """Log training metrics to Dataloop after each epoch."""
+        if logs is None:
+            logs = {}
+            
+        # Prepare metric samples for Dataloop
+        samples = []
+        
+        # Training metrics
+        if 'loss' in logs:
+            samples.append(
+                dl.PlotSample(
+                    figure='Training Metrics',
+                    legend='Training Loss',
+                    x=epoch + 1,
+                    y=float(logs['loss'])
+                )
+            )
+            
+        if 'accuracy' in logs:
+            samples.append(
+                dl.PlotSample(
+                    figure='Training Metrics',
+                    legend='Training Accuracy',
+                    x=epoch + 1,
+                    y=float(logs['accuracy'])
+                )
+            )
+            
+        # Validation metrics
+        if 'val_loss' in logs:
+            samples.append(
+                dl.PlotSample(
+                    figure='Training Metrics',
+                    legend='Validation Loss',
+                    x=epoch + 1,
+                    y=float(logs['val_loss'])
+                )
+            )
+            
+        if 'val_accuracy' in logs:
+            samples.append(
+                dl.PlotSample(
+                    figure='Training Metrics',
+                    legend='Validation Accuracy',
+                    x=epoch + 1,
+                    y=float(logs['val_accuracy'])
+                )
+            )
+        
+        # Log metrics to Dataloop
+        if samples:
+            try:
+                self.model_entity.metrics.create(samples=samples)
+                logger.info(f"Logged {len(samples)} metrics for epoch {epoch + 1}")
+            except Exception as e:
+                logger.warning(f"Failed to log metrics to Dataloop: {e}")
+
     def train(self, data_path, output_path, **kwargs):
         if self.model_mode != "base":
             raise ValueError("Only base mode training is supported for MoViNet.")
@@ -132,7 +190,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         )
 
         with tf.device(self.device):
-            self.model.fit(
+            history = self.model.fit(
                 train_ds,
                 validation_data=validation_ds,
                 epochs=num_epochs,
@@ -140,6 +198,21 @@ class ModelAdapter(dl.BaseModelAdapter):
                 verbose=1,
                 callbacks=[checkpoint_callback],
             )
+            
+            # Log metrics for each epoch after training
+            for epoch, (loss, acc, val_loss, val_acc) in enumerate(zip(
+                history.history.get('loss', []),
+                history.history.get('accuracy', []),
+                history.history.get('val_loss', []),
+                history.history.get('val_accuracy', [])
+            )):
+                logs = {
+                    'loss': loss,
+                    'accuracy': acc,
+                    'val_loss': val_loss,
+                    'val_accuracy': val_acc
+                }
+                self.log_metrics_to_dataloop(epoch, logs)
 
     def predict(self, batch, **kwargs):
         top_k = self.configuration.get("top_k", 3)
