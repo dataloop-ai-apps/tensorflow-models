@@ -343,3 +343,5 @@ tmp
 adapters/movinet/test_generator.py
 adapters/movinet/tests.py
 launch.json
+/local_packages
+/.devcontainer
