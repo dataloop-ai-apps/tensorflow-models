@@ -24,14 +24,14 @@ ENV XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/local/cuda/nvvm/libdevice
 # Python dependencies
 RUN pip3 install "cython<3.0.0" wheel
 RUN pip3 install "pyyaml==5.4.1" --no-build-isolation
-RUN pip3 install --user keras==3.11.3 \
+RUN pip3 install --user keras==2.10.0 \
                         tensorflow-hub==0.16.1 \
                         opencv-python-headless \
                         tf-models-official==2.10.1 \
-                        tensorflow[cuda]==2.20.0 \
+                        tensorflow[cuda]==2.10.1 \
                         mediapy
 
 RUN pip3 install --user --upgrade tensorflow-datasets==4.8.3
 
-# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.2 -f ./Dockerfile  .
-# docker push gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.2
+# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1 -f ./Dockerfile  .
+# docker push gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1
