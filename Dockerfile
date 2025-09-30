@@ -29,9 +29,10 @@ RUN pip3 install --user keras==3.11.3 \
                         opencv-python-headless \
                         tf-models-official==2.10.1 \
                         tensorflow[cuda]==2.20.0 \
-                        mediapy
+                        mediapy \
+                        torch==2.8.0
 
 RUN pip3 install --user --upgrade tensorflow-datasets==4.8.3
 
-# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1 -f ./Dockerfile  .
-# docker push gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1
+# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.2 -f ./Dockerfile  .
+# docker push gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.2
