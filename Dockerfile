@@ -29,8 +29,7 @@ RUN pip3 install --user keras==3.11.3 \
                         opencv-python-headless \
                         tf-models-official==2.10.1 \
                         tensorflow[cuda]==2.20.0 \
-                        mediapy \
-                        torch==2.8.0
+                        mediapy
 
 RUN pip3 install --user --upgrade tensorflow-datasets==4.8.3
 
