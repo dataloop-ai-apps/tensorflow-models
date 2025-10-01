@@ -8,6 +8,7 @@ import dtlpy as dl
 import logging
 import cv2
 import os
+import json
 
 logger = logging.getLogger("movinet-model-adapter")
 
@@ -55,10 +56,68 @@ class ModelAdapter(dl.BaseModelAdapter):
         self.model.save_weights(os.path.join(local_path, model_filename))
         self.configuration["weights_filename"] = model_filename
 
+    def log_metrics_to_dataloop(self, epoch, logs):
+        """Log training metrics to Dataloop after each epoch."""
+        if logs is None:
+            logs = {}
+        
+        # Update current epoch
+        self.current_epoch = epoch + 1
+        
+        # Define fallback values for non-finite metrics
+        NaN_dict = {
+            'loss': 0.0,
+            'accuracy': 0.0,
+            'val_loss': 0.0,
+            'val_accuracy': 0.0
+        }
+        
+        # Create a mapping of metric names to figure names for consistency
+        metric_mapping = {
+            'loss': 'Training Loss',
+            'accuracy': 'Training Accuracy', 
+            'val_loss': 'Validation Loss',
+            'val_accuracy': 'Validation Accuracy'
+        }
+        
+        # Prepare metric samples for Dataloop
+        samples = []
+        
+        for metric_name, value in logs.items():
+            if metric_name not in metric_mapping:
+                continue
+                
+            figure_name = metric_mapping[metric_name]
+            
+            if not np.isfinite(value):
+                filters = dl.Filters(resource=dl.FiltersResource.METRICS)
+                filters.add(field='modelId', values=self.model_entity.id)
+                filters.add(field='figure', values=figure_name)
+                filters.add(field='data.x', values=self.current_epoch - 1)
+                items = self.model_entity.metrics.list(filters=filters)
+
+                if items.items_count > 0:
+                    value = items.items[0].y
+                else:
+                    value = NaN_dict.get(metric_name, 0)
+                logger.warning(f'Value is not finite. For figure {figure_name} and legend metrics using value {value}')
+            
+            samples.append(dl.PlotSample(figure=figure_name, legend='metrics', x=self.current_epoch, y=value))
+        
+        # Log metrics to Dataloop
+        if samples:
+            try:
+                self.model_entity.metrics.create(samples=samples, dataset_id=self.model_entity.dataset_id)
+                logger.info(f"Logged {len(samples)} metrics for epoch {self.current_epoch}")
+            except Exception as e:
+                logger.warning(f"Failed to log metrics to Dataloop: {e}")
+
     def train(self, data_path, output_path, **kwargs):
         if self.model_mode != "base":
             raise ValueError("Only base mode training is supported for MoViNet.")
 
+        self.current_epoch = 0
+        
         batch_size = self.configuration.get("batch_size", 2)
         num_frames = self.configuration.get("num_frames", 13)
         num_epochs = self.configuration.get("num_epochs", 8)
@@ -132,7 +191,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         )
 
         with tf.device(self.device):
-            self.model.fit(
+            history = self.model.fit(
                 train_ds,
                 validation_data=validation_ds,
                 epochs=num_epochs,
@@ -140,6 +199,21 @@ class ModelAdapter(dl.BaseModelAdapter):
                 verbose=1,
                 callbacks=[checkpoint_callback],
             )
+            
+            # Log metrics for each epoch after training
+            for epoch, (loss, acc, val_loss, val_acc) in enumerate(zip(
+                history.history.get('loss', []),
+                history.history.get('accuracy', []),
+                history.history.get('val_loss', []),
+                history.history.get('val_accuracy', [])
+            )):
+                logs = {
+                    'loss': loss,
+                    'accuracy': acc,
+                    'val_loss': val_loss,
+                    'val_accuracy': val_acc
+                }
+                self.log_metrics_to_dataloop(epoch, logs)
 
     def predict(self, batch, **kwargs):
         top_k = self.configuration.get("top_k", 3)
@@ -301,7 +375,28 @@ class ModelAdapter(dl.BaseModelAdapter):
 
 
 if __name__ == "__main__":
+    # Training test
     model_entity = dl.models.get(model_id="")
-    item = dl.items.get(item_id="")
-    model = ModelAdapter(model_entity=model_entity)
-    model.predict_items(items=[item])
+    model_entity.dataset_id = ""
+    model_entity.metadata['system'] = {}
+    # If items are tagged with train and validation, use the following:
+    model_entity.metadata['system']['subsets'] = {
+        'train': dl.Filters(field='metadata.system.tags.train', values=True).prepare(),
+        'validation': dl.Filters(field='metadata.system.tags.validation', values=True).prepare()
+    }
+    # If items are not tagged with train and validation, use the following:
+    # model_entity.metadata['system']['subsets'] = {
+    #     'train': json.dumps(dl.Filters(field='dir', values='/train').prepare()),
+    #     'validation': json.dumps(dl.Filters(field='dir', values='/validation').prepare()),
+    # }
+    model_entity.status = 'pre-trained'
+    model_entity.update(True)
+    adapter = ModelAdapter(model_entity=model_entity)
+    adapter.train_model(model=model_entity)
+
+    # # Prediction test
+    # Uncomment and fill in item_id to test prediction
+    # model_entity = dl.models.get(model_id="")
+    # item = dl.items.get(item_id="") 
+    # adapter = ModelAdapter(model_entity=model_entity)
+    # adapter.predict_items(items=[item])
