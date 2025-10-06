@@ -1,4 +1,4 @@
-FROM dataloopai/dtlpy-agent:gpu.cuda.11.8.py3.10.opencv
+FROM hub.dataloop.ai/dtlpy-runner-images/gpu:python3.11_cuda11.8_opencv
 
 USER root
 RUN apt-get update && apt-get install -y \
@@ -6,29 +6,28 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     libffi-dev \
     libssl-dev \
-    curl
-
-# CUDA Toolkit 11.8 for TensorFlow XLA support
-RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2204/x86_64/cuda-ubuntu2204.pin && \
-    mv cuda-ubuntu2204.pin /etc/apt/preferences.d/cuda-repository-pin-600 && \
-    wget https://developer.download.nvidia.com/compute/cuda/11.8.0/local_installers/cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb && \
-    dpkg -i cuda-repo-ubuntu2204-11-8-local_11.8.0-520.61.05-1_amd64.deb && \
-    cp /var/cuda-repo-ubuntu2204-11-8-local/cuda-*-keyring.gpg /usr/share/keyrings/ && \
-    apt-get update && \
-    apt-get install -y cuda
+    curl \
+    gfortran \
+    libopenblas-dev \
+    liblapack-dev
 
 USER 1000
 ENV HOME=/tmp
-ENV XLA_FLAGS=--xla_gpu_cuda_data_dir=/usr/local/cuda/nvvm/libdevice
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PIP_NO_CACHE_DIR=1
 
 # Python dependencies
+RUN python3 -m pip install --user --upgrade pip setuptools wheel
+RUN python3 -m pip install --user --only-binary=:all: numpy==1.26.4 scipy==1.11.4
 RUN pip3 install "cython<3.0.0" wheel
 RUN pip3 install "pyyaml==5.4.1" --no-build-isolation
-RUN pip3 install --user keras==2.10.0 \
+RUN pip3 install --user keras==3.11.3 \
                         tensorflow-hub==0.16.1 \
                         opencv-python-headless \
-                        tf-models-official==2.10.1 \
-                        tensorflow[cuda]==2.10.1 \
+                        tf-models-official==2.19.1 \
+                        tf-keras==2.19.0 \
+                        tensorflow-model-optimization==0.8.0 \
+                        tensorflow[cuda]==2.19.0 \
                         mediapy
 
 RUN pip3 install --user --upgrade tensorflow-datasets==4.8.3
