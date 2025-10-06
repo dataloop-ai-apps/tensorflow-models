@@ -8,11 +8,9 @@
     "Provider": "TensorFlow",
     "Category": "Model",
     "Computer Vision": "Video Classification",
-    "Media Type": [
-      "Video"
-    ],
+    "Media Type": ["Video"],
     "Deployed By": "Dataloop",
-    "License" :"Apache 2.0"
+    "License": "Apache 2.0"
   },
   "codebase": {
     "type": "git",
@@ -26,7 +24,7 @@
         "runtime": {
           "podType": "highmem-l",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.2",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
@@ -39,7 +37,7 @@
         "runtime": {
           "podType": "gpu-t4",
           "concurrency": 1,
-          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1",
+          "runnerImage": "gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.2",
           "autoscaler": {
             "type": "rabbitmq",
             "minReplicas": 0,
@@ -137,8 +135,7 @@
                 "description": "Dataloop Filter DQL"
               }
             ],
-            "output": [
-            ],
+            "output": [],
             "displayName": "Predict Dataset",
             "displayIcon": "",
             "description": "Function to run MoViNet inference on a dataset"
