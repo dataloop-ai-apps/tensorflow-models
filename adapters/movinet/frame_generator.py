@@ -134,10 +134,10 @@ class FrameGenerator:
             path_with_jsons = os.sep.join(path_parts)
             json_path = os.path.splitext(path_with_jsons)[0] + '.json'
 
-            f = open(json_path)
-            json_file = json.load(f)
-            annotations = json_file.get('annotations')
-            classes.append(annotations[0].get('label'))  # Supports Binary classification
+            with open(json_path) as f:
+                json_file = json.load(f)
+                annotations = json_file.get('annotations')
+                classes.append(annotations[0].get('label'))  # Supports Binary classification
 
         return video_paths, classes
 
