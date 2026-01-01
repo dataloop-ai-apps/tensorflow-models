@@ -1,4 +1,4 @@
-FROM hub.dataloop.ai/dtlpy-runner-images/gpu:python3.11_cuda11.8_pytorch2
+FROM hub.dataloop.ai/dtlpy-runner-images/gpu:python3.11_cuda11.8_opencv
 
 USER root
 RUN apt-get update && apt-get install -y \
@@ -32,5 +32,5 @@ RUN pip3 install --user keras==3.11.3 \
 
 RUN pip3 install --user --upgrade tensorflow-datasets==4.8.3
 
-# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.3 -f ./Dockerfile  .
-# docker push gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.3
+# docker build -t gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1 -f ./Dockerfile  .
+# docker push gcr.io/viewo-g/piper/agent/runner/apps/tensorflow-models:1.1.1
