@@ -1,6 +1,6 @@
-# TensorFlow Dataloop Model Adapters
+# TensorFlow DDOE Model Adapters
 
-This repository contains TensorFlow model adapters for integration with the Dataloop platform.
+This repository contains TensorFlow model adapters for integration with the DDOE platform.
 
 ## Available Models
 
@@ -11,13 +11,13 @@ Developers Documentation is [here](https://developers.dataloop.ai/tutorials/mode
 
 ## Installation
 
-You can add these models to your Dataloop project in two ways:
+You can add these models to your DDOE project in two ways:
 
-### Option 1: Dataloop Marketplace (UI)
+### Option 1: DDOE Marketplace (UI)
 
-The easiest way to use these models is to install them directly from the [Dataloop Marketplace](https://dataloop.ai/platform/marketplace/):
+The easiest way to use these models is to install them directly from the [DDOE Marketplace](https://dataloop.ai/platform/marketplace/):
 
-1. Navigate to the [Dataloop platform](https://dataloop.ai/)
+1. Navigate to the [DDOE platform](https://dataloop.ai/)
 2. Go to the "Marketplace" section
 3. Search for "MoViNet"
 4. Click "Install" to add the model to your project

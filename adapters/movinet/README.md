@@ -2,7 +2,7 @@
 
 This repo is a model integration
 between [TensorFlow MoviNet](https://www.tensorflow.org/hub/tutorials/movinet) model
-and [Dataloop](https://dataloop.ai/).
+and [DDOE](https://dataloop.ai/).
 MoViNet (Mobile Video Networks) is a family of *video classification* models designed for efficient real-time video
 processing. It is optimized for mobile and edge devices, making it ideal for real-time applications such as video
 surveillance, sports analysis, and more.
@@ -37,7 +37,7 @@ is received. It is ideal for scenarios where video data is streamed continuously
 To install the package and create the MoviNet model adapter, you will need
 a [project](https://developers.dataloop.ai/tutorials/getting_started/sdk_overview/chapter/#to-create-a-new-project) and
 a [dataset](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-dataset) in the
-Dataloop platform. The dataset should
+DDOE platform. The dataset should
 have [directories](https://developers.dataloop.ai/tutorials/data_management/manage_datasets/chapter/#create-directory)
 containing its training and validation subsets.
 
