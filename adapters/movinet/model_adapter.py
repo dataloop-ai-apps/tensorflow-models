@@ -57,7 +57,7 @@ class ModelAdapter(dl.BaseModelAdapter):
         self.configuration["weights_filename"] = model_filename
 
     def log_metrics_to_dataloop(self, epoch, logs):
-        """Log training metrics to Dataloop after each epoch."""
+        """Log training metrics to DDOE after each epoch."""
         if logs is None:
             logs = {}
         
@@ -80,7 +80,7 @@ class ModelAdapter(dl.BaseModelAdapter):
             'val_accuracy': 'Validation Accuracy'
         }
         
-        # Prepare metric samples for Dataloop
+        # Prepare metric samples for DDOE
         samples = []
         
         for metric_name, value in logs.items():
@@ -104,13 +104,13 @@ class ModelAdapter(dl.BaseModelAdapter):
             
             samples.append(dl.PlotSample(figure=figure_name, legend='metrics', x=self.current_epoch, y=value))
         
-        # Log metrics to Dataloop
+        # Log metrics to DDOE
         if samples:
             try:
                 self.model_entity.metrics.create(samples=samples, dataset_id=self.model_entity.dataset_id)
                 logger.info(f"Logged {len(samples)} metrics for epoch {self.current_epoch}")
             except Exception as e:
-                logger.warning(f"Failed to log metrics to Dataloop: {e}")
+                logger.warning(f"Failed to log metrics to DDOE: {e}")
 
     def train(self, data_path, output_path, **kwargs):
         if self.model_mode != "base":
@@ -310,14 +310,14 @@ class ModelAdapter(dl.BaseModelAdapter):
         return item
 
     def convert_from_dtlpy(self, data_path, **kwargs):
-        """Convert Dataloop structure data to model structured
+        """Convert DDOE structure data to model structured
 
             Virtual method - need to implement
 
             e.g. take dlp dir structure and construct annotation file
 
         :param data_path: `str` local File System directory path where
-                           we already downloaded the data from dataloop platform
+                           we already downloaded the data from DDOE platform
         :return:
         """
 
